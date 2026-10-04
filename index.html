@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Microstates and Macrostates, Interactively</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EDF1F4; --surface:#F8FAFC; --ink:#15202B; --muted:#56636F; --rule:#C5CFD7; --band:#E2E8ED;
+  --a:#C4402B; --b:#2B67D1; --acc:#6A3FB0; --gold:#C8901A; --green:#2E7A57; --res:#8B98A4;
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E151C; --surface:#141D26; --ink:#E3E9EE; --muted:#97A4B0; --rule:#2B3743; --band:#1B2631;
+    --a:#FF7A66; --b:#6E9FF2; --acc:#B392F0; --gold:#F0C05C; --green:#5CC593; --res:#5B6976;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E151C; --surface:#141D26; --ink:#E3E9EE; --muted:#97A4B0; --rule:#2B3743; --band:#1B2631;
+  --a:#FF7A66; --b:#6E9FF2; --acc:#B392F0; --gold:#F0C05C; --green:#5CC593; --res:#5B6976;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--serif);font-size:1.1rem;line-height:1.62;-webkit-font-smoothing:antialiased}
+img,canvas{max-width:100%}
+a{color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:2px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 clamp(1rem,4vw,2.5rem)}
+.prose{max-width:40rem}
+
+header.hero{padding:clamp(2.5rem,7vw,5rem) 0 1.5rem}
+.credit{font-family:var(--sans);font-size:.9rem;color:var(--muted);margin:0 0 1.25rem}
+h1{font-weight:500;font-size:clamp(2.5rem,7.5vw,5.25rem);line-height:.98;letter-spacing:-.025em;margin:0 0 1.25rem;max-width:13ch}
+.lede{font-size:clamp(1.15rem,2.2vw,1.35rem);max-width:37rem;margin:0}
+
+section{padding:clamp(2.5rem,6vw,4rem) 0;border-top:1px solid var(--rule)}
+section:first-of-type{border-top:0;padding-top:1rem}
+h2{font-weight:500;font-size:clamp(1.7rem,3.5vw,2.35rem);line-height:1.1;letter-spacing:-.015em;margin:0 0 1rem}
+h3{font-family:var(--sans);font-weight:600;font-size:1rem;margin:1.75rem 0 .5rem}
+p{margin:0 0 1rem}
+.note{font-size:.95rem;color:var(--muted)}
+
+.eq{display:block;text-align:center;margin:1.25rem 0;overflow-x:auto;overflow-y:hidden;padding:.25rem 0}
+.eq.multi{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;column-gap:2.2em;row-gap:.65rem}
+.boxed.multi{display:inline-flex;flex-wrap:wrap;justify-content:center;align-items:center;column-gap:2em;row-gap:.6rem;max-width:100%}
+.eqp{max-width:100%}
+.multi.chain{column-gap:.35em}
+mjx-container{color:inherit}
+mjx-container[display="true"]{margin:0 !important}
+.stats mjx-container,.legend mjx-container,.cap mjx-container,.ctl small mjx-container{font-size:105%}
+.ctl output mjx-container{font-size:95%}
+.boxed{display:inline-block;border:1.5px solid var(--acc);padding:.5rem 1rem;border-radius:3px}
+
+.fig{display:grid;grid-template-columns:minmax(0,1fr) 17.5rem;gap:1.5rem;align-items:start;margin-top:1.5rem}
+@media (max-width:820px){.fig{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:1rem}
+.canvas-holder{background:var(--surface);border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+canvas{display:block;width:100%}
+
+.ctl{font-family:var(--sans);font-size:.9rem;margin-bottom:1.1rem}
+.ctl:last-child{margin-bottom:0}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;font-weight:500;margin-bottom:.3rem}
+.ctl .lt{flex:1 1 auto}
+.ctl .lbl{display:block;font-weight:500;margin-bottom:.4rem}
+.ctl output{flex:0 0 auto;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:400}
+.ctl small{display:block;color:var(--muted);line-height:1.4;margin-top:.25rem}
+input[type=range]{width:100%;accent-color:var(--acc);margin:0}
+.btns{display:flex;flex-wrap:wrap;gap:.5rem}
+button{font-family:var(--sans);font-size:.88rem;font-weight:500;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:4px;padding:.45rem .8rem;cursor:pointer}
+button:hover{border-color:var(--ink)}
+button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+
+.stats{font-family:var(--sans);font-size:.9rem;display:grid;grid-template-columns:auto auto;gap:.35rem 1rem;margin:0}
+.stats dt{color:var(--muted)}
+.stats dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.stats .sep{grid-column:1/-1;border-top:1px solid var(--rule);margin:.3rem 0}
+.legend{font-family:var(--sans);font-size:.85rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:1rem;margin:.6rem 0 0;align-items:center}
+.swatch{display:inline-block;width:.75rem;height:.75rem;border-radius:2px;vertical-align:-1px;margin-right:.35rem}
+.swatch.line{height:3px;width:1.1rem;vertical-align:3px;border-radius:0}
+.cap{font-family:var(--sans);font-size:.85rem;color:var(--muted);margin:.5rem .25rem 0}
+.verdict{font-family:var(--sans);font-size:1rem;font-weight:500;margin:.85rem 0 0;max-width:40rem}
+
+/* three-coin table */
+.coins{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin-top:1.25rem;font-family:var(--sans)}
+@media (max-width:640px){.coins{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cgroup{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:.75rem;border-top:3px solid var(--acc)}
+.cgroup h4{margin:0 0 .5rem;font-size:.92rem;font-weight:600}
+.crow{display:flex;gap:.35rem;margin:.3rem 0}
+.coin{width:1.9rem;height:1.9rem;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:.85rem;border:1.5px solid var(--gold);color:var(--ink)}
+.coin.h{background:var(--gold);color:#1a1205}
+.cgroup .m{font-size:.85rem;color:var(--muted);margin-top:.4rem}
+
+/* N = 3 Einstein solid table */
+.tblwrap{overflow-x:auto}
+table.osc{border-collapse:collapse;font-family:var(--sans);font-size:.9rem;font-variant-numeric:tabular-nums;margin-top:.5rem}
+table.osc td,table.osc th{padding:.25rem .7rem;border-bottom:1px solid var(--rule);text-align:center}
+table.osc th{font-weight:600;color:var(--muted)}
+
+footer{border-top:1px solid var(--rule);padding:2rem 0 3rem;font-family:var(--sans);font-size:.9rem;color:var(--muted)}
+footer p{margin:0 0 .4rem}
+</style>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' },
+  options: { enableMenu: false }
+};
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="credit">An interactive demo created by Claude Opus 5.5, based on the lecture notes by Sang Hoon Lee (Statistical Physics 1, Chapter 2, The Second Law, Sections 2.1 to 2.3)</p>
+  <h1>Microstates and Macrostates</h1>
+  <p class="lede">Why does heat flow from hot to cold, and never the other way? Not because it must, but because it is overwhelmingly probable. To see why, learn to count all the ways a system’s energy can be arranged.</p>
+</header>
+
+<!-- ============ COINS ============ -->
+<section id="coins" aria-labelledby="h-coins">
+  <h2 id="h-coins">Two-state systems</h2>
+  <div class="prose">
+    <p>Many thermodynamic processes happen in one direction but never in reverse: not inevitably, but because the reverse is overwhelmingly improbable. To make that precise we need probability and statistics, and the art of counting, combinatorics. Start by flipping three different coins: a penny, a nickel, and a dime.</p>
+    <p>Each of the 8 possible outcomes is a <strong>microstate</strong>. Classify them by something coarser, such as how many heads came up, and each class is a <strong>macrostate</strong>. The number of microstates in a macrostate is its <strong>multiplicity</strong>, \(\Omega\). If the coins are fair, every microstate is equally probable, so</p>
+    <div class="eq">\[ \text{probability of } n \text{ heads} = \frac{\Omega(n)}{\Omega(\text{all})} \]</div>
+  </div>
+  <div class="coins" id="threeCoins" aria-label="The eight outcomes of three coins, grouped by number of heads"></div>
+
+  <h3>Many coins</h3>
+  <div class="prose">
+    <p>Flip 100 coins and there are \(2^{100} \approx 10^{30}\) microstates but only 101 macrostates (0 to 100 heads). One head can be in any of 100 places, so \(\Omega(1) = 100\); a pair of heads in \(100 \cdot 99/2\) ways, since the pair can come in either order; in general, for \(N\) coins,</p>
+    <div class="eq"><span class="boxed">\( \displaystyle \Omega(N, n) = \frac{N!}{n!\,(N-n)!} = \binom{N}{n} \)</span></div>
+    <p>read “\(N\) choose \(n\).” Flip the coins below, over and over, and watch the counts pile up where the multiplicity is largest.</p>
+  </div>
+  <div class="fig">
+    <div>
+      <div class="canvas-holder"><canvas id="flipCanvas" aria-label="The current flip of all the coins"></canvas></div>
+      <div class="canvas-holder" style="margin-top:.75rem"><canvas id="binCanvas" aria-label="How often each number of heads has come up, compared with the multiplicity"></canvas></div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--gold)"></span>How often each macrostate came up</span>
+        <span><span class="swatch line" style="background:var(--acc)"></span>\(\Omega(N,n)/2^N\)</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ctl"><span class="lbl">Number of coins \(N\)</span>
+        <div class="btns" role="group" aria-label="Number of coins" id="nBtns"></div>
+      </div>
+      <div class="ctl"><span class="lbl">Show them as</span>
+        <div class="btns" role="group" aria-label="Display">
+          <button type="button" data-look="coin" aria-pressed="true">Coins</button>
+          <button type="button" data-look="dipole">Dipoles</button>
+        </div>
+      </div>
+      <div class="ctl btns">
+        <button type="button" class="primary" id="flipOnce">Flip once</button>
+        <button type="button" id="flipAuto" aria-pressed="false">Keep flipping</button>
+        <button type="button" id="flipClear">Clear</button>
+      </div>
+      <dl class="stats">
+        <dt>Heads now</dt><dd id="fH">–</dd>
+        <dt>Its multiplicity</dt><dd id="fOm">–</dd>
+        <dt class="sep"></dt>
+        <dt>Microstates, \(2^N\)</dt><dd id="fAll">–</dd>
+        <dt>Macrostates, \(N+1\)</dt><dd id="fMac">–</dd>
+        <dt>Flips so far</dt><dd id="fCnt">0</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="prose" style="margin-top:1.5rem">
+    <p>Why flip coins in physics? Because the same mathematics describes a <strong>two-state paramagnet</strong>: \(N\) dipoles, each pointing up or down, that act like tiny compass needles tending to align with an external magnetic field (switch the view to “Dipoles”). With \(N_\uparrow\) up and \(N_\downarrow = N - N_\uparrow\) down, \(\Omega(N_\uparrow) = \binom{N}{N_\uparrow}\). In a field, an up dipole has less energy than a down one, so (neglecting interactions between dipoles) the total energy is fixed by \(N_\uparrow\): specifying the macrostate is the same as specifying the total energy, as it is, at least in part, for nearly all physical systems.</p>
+    <p class="note">Unlike fair coins, the field breaks the symmetry between up and down, so the microstates are no longer all equally probable, and the probability of \(N_\uparrow\) is not simply \(\Omega(N_\uparrow)/\Omega(\text{all})\). That case is taken up in Section 3.3.</p>
+  </div>
+</section>
+
+<!-- ============ EINSTEIN SOLID ============ -->
+<section id="einstein" aria-labelledby="h-ein">
+  <h2 id="h-ein">The Einstein solid</h2>
+  <div class="prose">
+    <p>A quantum harmonic oscillator with potential energy \(\tfrac12 k_s x^2\) has energy levels \(E_n = (n + \tfrac12)\hbar\omega\). Using \(\hbar\omega = hf\) and ignoring the zero-point energy, the allowed energies are \(0, hf, 2hf, \ldots\): any number of energy “units,” all the same size. Atoms in a solid oscillate like this in three independent directions, so \(N\) oscillators describe \(N/3\) atoms. Modeling a solid as a collection of identical quantum oscillators was first proposed by Albert Einstein in 1907: an <strong>Einstein solid</strong>.</p>
+    <p>With \(q\) units of energy among \(N\) oscillators, how many microstates are there? Represent each unit as a dot and separate the oscillators with \(N-1\) bars. Every arrangement of \(q\) dots and \(N-1\) bars is a microstate, so</p>
+    <div class="eq"><span class="boxed">\( \displaystyle \Omega(N, q) = \binom{q + N - 1}{q} = \frac{(q+N-1)!}{q!\,(N-1)!} \)</span></div>
+  </div>
+  <div class="fig">
+    <div>
+      <div class="canvas-holder"><canvas id="dotsCanvas" aria-label="One microstate drawn as dots and bars, with the energy of each oscillator"></canvas></div>
+      <p class="cap">Each dot is one unit of energy; each bar separates one oscillator from the next.</p>
+    </div>
+    <div class="panel">
+      <div class="ctl">
+        <label for="eN"><span class="lt">Oscillators \(N\)</span> <output id="eNOut"></output></label>
+        <input type="range" id="eN" min="1" max="10" step="1" value="4">
+      </div>
+      <div class="ctl">
+        <label for="eQ"><span class="lt">Energy units \(q\)</span> <output id="eQOut"></output></label>
+        <input type="range" id="eQ" min="0" max="15" step="1" value="8">
+      </div>
+      <div class="ctl btns"><button type="button" class="primary" id="eNew">Show another microstate</button></div>
+      <dl class="stats">
+        <dt>This microstate</dt><dd id="eState">–</dd>
+        <dt>\(\Omega(N, q)\)</dt><dd id="eOm">–</dd>
+      </dl>
+    </div>
+  </div>
+  <h3>Three oscillators, all their microstates</h3>
+  <p class="prose">For a very small Einstein solid, \(N = 3\), the microstates can be listed: \(\Omega(0) = 1\), \(\Omega(1) = 3\), \(\Omega(2) = 6\), \(\Omega(3) = 10\).</p>
+  <div class="ctl" style="max-width:24rem">
+    <label for="e3q"><span class="lt">Energy units \(q\)</span> <output id="e3qOut"></output></label>
+    <input type="range" id="e3q" min="0" max="5" step="1" value="2">
+  </div>
+  <div class="tblwrap"><table class="osc" id="e3Table" aria-label="All microstates of three oscillators with q units of energy"></table></div>
+  <p class="prose note" style="margin-top:1rem">Is any one particular microstate special? No. Picking 1, 2, 3, 4, 5, 6 as lottery numbers seems absurdly unlikely to come up, but it is exactly as likely as any other set of numbers you might choose. Every microstate is equally improbable; what differs is how many of them make up each macrostate.</p>
+</section>
+
+<!-- ============ INTERACTING ============ -->
+<section id="interacting" aria-labelledby="h-int">
+  <h2 id="h-int">Interacting systems</h2>
+  <div class="prose">
+    <p>Now let two Einstein solids, A and B, share energy, “weakly” coupled so the exchange between them is much slower than within each. Over short times \(U_A\) and \(U_B\) are essentially fixed, and the macrostate of the composite system is specified by them. Only the total \(q_{\text{total}} = q_A + q_B\) is fixed overall. For each \(q_A\), solid B has \(q_B = q_{\text{total}} - q_A\), and since the two solids are independent,</p>
+    <div class="eq"><span class="boxed multi chain"><span class="eqp">\( \displaystyle \Omega_{\text{total}} = \Omega_A\,\Omega_B \)</span><span class="eqp">\( \displaystyle = \binom{q_A + N_A - 1}{q_A}\binom{q_B + N_B - 1}{q_B} \)</span></span></div>
+    <p>Assume that over long times the energy gets passed around randomly, so that every microstate is equally probable. That is the <strong>fundamental assumption of statistical mechanics</strong>: in an isolated system in thermal equilibrium, all accessible microstates are equally probable. Macrostates are not: the most likely one is the one with the most microstates.</p>
+  </div>
+  <div class="fig">
+    <div>
+      <div class="canvas-holder"><canvas id="omCanvas" aria-label="Total multiplicity for each division of the energy between the two solids"></canvas></div>
+      <p class="cap" id="omCap"></p>
+    </div>
+    <div class="panel">
+      <div class="ctl btns">
+        <button type="button" id="preSmall">3 + 3, q = 6</button>
+        <button type="button" id="preLarge">300 + 200, q = 100</button>
+      </div>
+      <div class="ctl">
+        <label for="iNA"><span class="lt">\(N_A\)</span> <output id="iNAOut"></output></label>
+        <input type="range" id="iNA" min="1" max="600" step="1" value="3">
+      </div>
+      <div class="ctl">
+        <label for="iNB"><span class="lt">\(N_B\)</span> <output id="iNBOut"></output></label>
+        <input type="range" id="iNB" min="1" max="600" step="1" value="3">
+      </div>
+      <div class="ctl">
+        <label for="iQ"><span class="lt">\(q_{\text{total}}\)</span> <output id="iQOut"></output></label>
+        <input type="range" id="iQ" min="1" max="400" step="1" value="6">
+      </div>
+      <dl class="stats">
+        <dt>All microstates</dt><dd id="iAll">–</dd>
+        <dt>Macrostates</dt><dd id="iMac">–</dd>
+        <dt>Most likely \(q_A\)</dt><dd id="iBest">–</dd>
+        <dt>Its probability</dt><dd id="iBestP">–</dd>
+        <dt class="sep"></dt>
+        <dt>Probability of \(q_A = 0\)</dt><dd id="iZero">–</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="prose" style="margin-top:1.5rem">
+    <p>With 3 + 3 oscillators and 6 units there are 462 microstates; \(q_A = 3\) has 100 of them, and all the energy in B has only 28. With 300 + 200 oscillators and 100 units there are about \(9.3 \times 10^{115}\) microstates, and nearly all of them sit near \(q_A = 60\): the energy divides in the ratio \(N_A : N_B = 3 : 2\). The probability of finding \(q_A < 10\) is below \(10^{-20}\). The universe is about \(10^{18}\) seconds old, so you would need to check a hundred times a second for its whole age to have a decent chance of seeing it. In layman’s terms: it never happens.</p>
+  </div>
+</section>
+
+<!-- ============ IRREVERSIBILITY ============ -->
+<section id="flow" aria-labelledby="h-flow">
+  <h2 id="h-flow">Watching energy flow</h2>
+  <div class="prose">
+    <p>Here the 300 + 200 oscillator system starts with all 100 units in solid B. At each step, a random oscillator passes one unit (if it has one) to another random oscillator anywhere in the system. Any such step can be undone by the reverse step, which is equally likely, so no microstate is preferred over another: the principle of detailed balance, which is exactly what makes the fundamental assumption work. Yet watch what happens to \(q_A\).</p>
+  </div>
+  <div class="fig">
+    <div>
+      <div class="canvas-holder"><canvas id="solidCanvas" aria-label="The oscillators of both solids, colored by energy"></canvas></div>
+      <div class="canvas-holder" style="margin-top:.75rem"><canvas id="traceCanvas" aria-label="Energy in solid A over time, and how often each value has occurred"></canvas></div>
+      <div class="legend">
+        <span><span class="swatch line" style="background:var(--a)"></span>\(q_A\) over time</span>
+        <span><span class="swatch" style="background:var(--a);opacity:.45"></span>Time spent at each \(q_A\)</span>
+        <span><span class="swatch line" style="background:var(--acc)"></span>\(\Omega_{\text{total}}(q_A)\), scaled</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ctl"><span class="lbl">Start with the energy</span>
+        <div class="btns">
+          <button type="button" data-start="B" aria-pressed="true">All in B</button>
+          <button type="button" data-start="A">All in A</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <label for="flSpd"><span class="lt">Speed</span> <output id="flSpdOut"></output></label>
+        <input type="range" id="flSpd" min="0" max="4" step="1" value="1">
+      </div>
+      <div class="ctl btns"><button type="button" id="flPlay">Pause</button></div>
+      <dl class="stats">
+        <dt>Steps</dt><dd id="flSteps">0</dd>
+        <dt>\(q_A\) now</dt><dd id="flQA">–</dd>
+        <dt>\(q_B\) now</dt><dd id="flQB">–</dd>
+      </dl>
+      <p class="cap" style="margin:.75rem 0 0">Each square is an oscillator: 300 in A, 200 in B. Darker squares hold more energy units. The time-spent histogram includes the initial climb, so its low tail fades as the run goes on.</p>
+    </div>
+  </div>
+  <div class="prose" style="margin-top:1.5rem">
+    <p>Energy flows spontaneously from B to A, and never back (aside from small fluctuations around \(q_A = 60\)): the system behaves <strong>irreversibly</strong>. That is the physical explanation of heat. It is a probabilistic phenomenon, not absolutely certain but extremely likely. The flow stops when the system reaches, or comes very near, its most likely macrostate, the one with the greatest multiplicity. This <strong>law of increase of multiplicity</strong> is one version of the famous <strong>second law of thermodynamics</strong>: not a fundamental law, but a very strong statement about probabilities.</p>
+    <p class="note">And this is “just” 300 + 200 oscillators. Real solids have around \(10^{23}\), far beyond what even a computer can count directly, which calls for some good approximations, the subject of the next section.</p>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p>Created by Claude Opus 5.5, based on the lecture notes by Sang Hoon Lee (Statistical Physics 1, Chapter 2, The Second Law, Sections 2.1 to 2.3).</p>
+    <p>Large multiplicities are computed exactly with logarithms of factorials. Equations typeset with MathJax.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let C = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ['bg','surface','ink','muted','rule','band','a','b','acc','gold','green','res'].forEach(k => C[k] = cs.getPropertyValue('--'+k).trim());
+}
+readColors();
+const SANS = '"Instrument Sans", system-ui, sans-serif';
+const SERIF = '"Newsreader", Georgia, serif';
+function fit(cv, LW, LH){
+  const w = cv.parentElement.clientWidth || LW, hgt = w*LH/LW;
+  cv.style.height = hgt + 'px';
+  const d = window.devicePixelRatio || 1;
+  cv.width = Math.round(w*d); cv.height = Math.round(hgt*d);
+  const ctx = cv.getContext('2d'); const s = w*d/LW;
+  ctx.setTransform(s,0,0,s,0,0);
+  return ctx;
+}
+function rich(c, x, y, size, parts, align){
+  c.save(); c.textAlign = 'left';
+  const fontOf = st => st==='i' ? 'italic '+size+'px '+SERIF : st==='isub' ? 'italic '+(size*0.7)+'px '+SERIF : (st==='sub'||st==='sup') ? (size*0.7)+'px '+SERIF : st==='s' ? (size*0.88)+'px '+SANS : size+'px '+SERIF;
+  const widths = parts.map(([t,st]) => { c.font = fontOf(st); return c.measureText(t).width; });
+  const total = widths.reduce((a,b)=>a+b,0);
+  let cx = align==='center' ? x-total/2 : align==='right' ? x-total : x;
+  parts.forEach(([t,st],i) => { c.font = fontOf(st); const dy = (st==='sub'||st==='isub') ? size*0.25 : st==='sup' ? -size*0.38 : 0; c.fillText(t, cx, y+dy); cx += widths[i]; });
+  c.restore(); return total;
+}
+function axes(c, W, H, box, xr, yr, xt, yt, xlab, ylab, xfmt, yfmt){
+  const [L,T,Rr,B] = box;
+  c.clearRect(0,0,W,H); c.fillStyle=C.surface; c.fillRect(0,0,W,H);
+  const X = v => L + (v-xr[0])/(xr[1]-xr[0])*(W-L-Rr), Y = v => H-B - (v-yr[0])/(yr[1]-yr[0])*(H-T-B);
+  c.font='12px '+SANS; c.fillStyle=C.muted; c.textAlign='center';
+  xt.forEach(v => { c.strokeStyle=C.band; c.lineWidth=1; c.beginPath(); c.moveTo(X(v),T); c.lineTo(X(v),H-B); c.stroke(); c.fillText(xfmt ? xfmt(v) : String(v), X(v), H-B+16); });
+  c.textAlign='right'; yt.forEach(v => { c.strokeStyle = v===0 ? C.rule : C.band; c.beginPath(); c.moveTo(L,Y(v)); c.lineTo(W-Rr,Y(v)); c.stroke(); c.fillText(yfmt ? yfmt(v) : String(v), L-6, Y(v)+4); });
+  c.fillStyle=C.muted; if (xlab) rich(c, W-Rr-2, H-8, 14, xlab, 'right');
+  if (ylab){ c.save(); c.globalAlpha=0.85; c.fillStyle=C.surface; c.fillRect(L+2, T-2, 200, 20); c.restore(); c.fillStyle=C.muted; rich(c, L+6, T+12, 14, ylab, 'left'); }
+  c.strokeStyle=C.muted; c.lineWidth=1; c.beginPath(); c.moveTo(L,T); c.lineTo(L,H-B); c.lineTo(W-Rr,H-B); c.stroke();
+  return {X, Y};
+}
+let rs = (Date.now() ^ 0x9e3779b9) >>> 0 || 1;
+const rnd = () => { rs ^= rs << 13; rs >>>= 0; rs ^= rs >>> 17; rs ^= rs << 5; rs >>>= 0; return rs / 4294967296; };
+
+/* ---------- exact big-number combinatorics via log factorials ---------- */
+const LF = new Float64Array(30001); for (let k=1;k<=30000;k++) LF[k] = LF[k-1] + Math.log(k);
+const lnC = (n, k) => (k < 0 || k > n) ? -Infinity : LF[n] - LF[k] - LF[n-k];
+const L10 = Math.LN10;
+function bigStr(lnx, sig){ // number given by its natural log
+  sig = sig || 2; if (lnx === -Infinity) return '0';
+  const l10 = lnx/L10;
+  if (l10 < 9) return Math.round(Math.exp(lnx)).toLocaleString('en-US');
+  const e = Math.floor(l10), m = Math.pow(10, l10 - e);
+  let ms = m.toFixed(sig-1), ee = e; if (parseFloat(ms) >= 10){ ms = (parseFloat(ms)/10).toFixed(sig-1); ee++; }
+  return ms + ' × 10<sup>' + ee + '</sup>';
+}
+function probStr(p){
+  if (p >= 0.01) return (p*100).toFixed(p >= 0.1 ? 1 : 2) + '%';
+  if (p === 0) return '0';
+  const l = Math.log10(p), e = Math.floor(l), m = Math.pow(10, l - e);
+  return m.toFixed(1) + ' × 10<sup>' + (e<0?'−'+(-e):e) + '</sup>';
+}
+
+/* ================= THREE COINS ================= */
+(function(){
+  const groups = [[3,'HHH'],[2,'HHT HTH THH'],[1,'HTT THT TTH'],[0,'TTT']];
+  $('threeCoins').innerHTML = groups.map(([h, list]) => {
+    const rows = list.split(' ').map(s => '<div class="crow">' + [...s].map(ch => '<span class="coin' + (ch==='H'?' h':'') + '" aria-label="' + (ch==='H'?'heads':'tails') + '">' + ch + '</span>').join('') + '</div>').join('');
+    const om = list.split(' ').length;
+    return '<div class="cgroup"><h4>' + h + ' head' + (h===1?'':'s') + '</h4>' + rows + '<div class="m">Ω = ' + om + ', probability ' + om + '/8</div></div>';
+  }).join('');
+})();
+
+/* ================= COIN FLIPPER ================= */
+const NS = [3, 10, 100, 1000, 10000];
+const FL = {N:100, look:'coin', s:null, counts:null, flips:0, auto:false};
+$('nBtns').innerHTML = NS.map(n => '<button type="button" data-n="' + n + '">' + n.toLocaleString('en-US') + '</button>').join('');
+function flipReset(){ FL.s = new Uint8Array(FL.N); FL.counts = new Float64Array(FL.N+1); FL.flips = 0; }
+function flipOnce(){ let h = 0; for (let i=0;i<FL.N;i++){ const v = rnd() < 0.5 ? 1 : 0; FL.s[i] = v; h += v; } FL.counts[h]++; FL.flips++; return h; }
+function heads(){ let h = 0; for (let i=0;i<FL.N;i++) h += FL.s[i]; return h; }
+function flipInfo(){
+  document.querySelectorAll('[data-n]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n===FL.N)));
+  document.querySelectorAll('[data-look]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.look===FL.look)));
+  $('flipAuto').setAttribute('aria-pressed', String(FL.auto)); $('flipAuto').textContent = FL.auto ? 'Stop' : 'Keep flipping';
+  const h = FL.flips ? heads() : null;
+  $('fH').textContent = h === null ? '–' : h.toLocaleString('en-US') + ' of ' + FL.N.toLocaleString('en-US');
+  $('fOm').innerHTML = h === null ? '–' : bigStr(lnC(FL.N, h));
+  $('fAll').innerHTML = bigStr(FL.N*Math.LN2); $('fMac').textContent = (FL.N+1).toLocaleString('en-US');
+  $('fCnt').textContent = FL.flips.toLocaleString('en-US');
+}
+function flipDraw(){
+  const c = flipCtx; if (!c) return;
+  const W=640, H=200; c.clearRect(0,0,W,H); c.fillStyle=C.surface; c.fillRect(0,0,W,H);
+  const N = FL.N, shown = Math.min(N, 1000);
+  const cols = shown <= 3 ? 3 : shown <= 10 ? 10 : shown <= 100 ? 25 : 50, rows = Math.ceil(shown/cols);
+  const cell = Math.min((W-20)/cols, (H-36)/rows), r = cell*0.42, ox = (W - cols*cell)/2, oy = 10;
+  for (let i=0;i<shown;i++){
+    const cx = ox + (i%cols + 0.5)*cell, cy = oy + (Math.floor(i/cols) + 0.5)*cell, v = FL.flips ? FL.s[i] : -1;
+    if (FL.look === 'coin'){
+      c.beginPath(); c.arc(cx, cy, r, 0, 7);
+      if (v === 1){ c.fillStyle=C.gold; c.fill(); } else { c.strokeStyle=C.gold; c.lineWidth=Math.max(1, r*0.18); c.stroke(); }
+      if (cell > 22){ c.fillStyle = v === 1 ? '#1a1205' : C.ink; c.font='600 '+Math.round(r*0.9)+'px '+SANS; c.textAlign='center'; c.fillText(v === 1 ? 'H' : v === 0 ? 'T' : '?', cx, cy + r*0.32); }
+    } else {
+      const up = v !== 0, len = cell*0.38; c.strokeStyle = up ? C.a : C.b; c.fillStyle = c.strokeStyle; c.lineWidth = Math.max(1, cell*0.07);
+      c.beginPath(); c.moveTo(cx, cy + (up ? len : -len)); c.lineTo(cx, cy + (up ? -len*0.4 : len*0.4)); c.stroke();
+      const t = up ? -len : len, hw = Math.max(1.5, cell*0.16); c.beginPath(); c.moveTo(cx, cy + t); c.lineTo(cx - hw, cy + t*0.35); c.lineTo(cx + hw, cy + t*0.35); c.closePath(); c.fill();
+    }
+  }
+  c.fillStyle=C.muted; c.font='12px '+SANS; c.textAlign='left';
+  c.fillText(N > shown ? 'Showing the first 1,000 of ' + N.toLocaleString('en-US') + ' coins.' : (FL.look === 'coin' ? 'Filled coins are heads.' : 'Red arrows point up, blue arrows down.'), 12, H-10);
+}
+function binDraw(){
+  const c = binCtx; if (!c) return;
+  const W=640, H=260, N = FL.N;
+  // x window: whole range for small N, ±6 standard deviations for large N
+  const sd = Math.sqrt(N)/2, lo = N <= 20 ? 0 : Math.max(0, Math.floor(N/2 - 6*sd)), hi = N <= 20 ? N : Math.min(N, Math.ceil(N/2 + 6*sd));
+  let pmax = 0; for (let n=lo;n<=hi;n++) pmax = Math.max(pmax, Math.exp(lnC(N,n) - N*Math.LN2));
+  const tot = FL.flips; if (tot) for (let n=lo;n<=hi;n++) pmax = Math.max(pmax, FL.counts[n]/tot);
+  pmax *= 1.15;
+  const step = (hi-lo) <= 10 ? 1 : (hi-lo) <= 40 ? 5 : (hi-lo) <= 120 ? 10 : (hi-lo) <= 300 ? 25 : (hi-lo) <= 700 ? 100 : 200;
+  const xt = []; for (let v = Math.ceil(lo/step)*step; v <= hi; v += step) xt.push(v);
+  const yt = [0, pmax/2.3, pmax/1.15].map(v => +v.toPrecision(2));
+  const ax = axes(c, W, H, [52,16,16,40], [lo-0.5, hi+0.5], [0, pmax], xt, yt, [['number of heads ','s'],['n','i']], [['probability','s']], v => v.toLocaleString('en-US'));
+  const bw = Math.max(1, (W-68)/(hi-lo+1));
+  if (tot){ c.fillStyle=C.gold; for (let n=lo;n<=hi;n++){ const p = FL.counts[n]/tot; if (!p) continue; const y = ax.Y(p); c.fillRect(ax.X(n) - bw*0.4, y, Math.max(1, bw*0.8), ax.Y(0)-y); } }
+  c.strokeStyle=C.acc; c.lineWidth=2.4; c.beginPath();
+  for (let n=lo;n<=hi;n++){ const y = ax.Y(Math.exp(lnC(N,n) - N*Math.LN2)); n===lo ? c.moveTo(ax.X(n),y) : c.lineTo(ax.X(n),y); } c.stroke();
+  if (N > 20){ c.fillStyle=C.muted; c.font='12px '+SANS; c.textAlign='right'; c.fillText('the outcomes outside this window are too rare to draw', W-20, 30); }
+}
+document.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', () => { FL.N = +b.dataset.n; flipReset(); flipInfo(); flipDraw(); binDraw(); }));
+document.querySelectorAll('[data-look]').forEach(b => b.addEventListener('click', () => { FL.look = b.dataset.look; flipInfo(); flipDraw(); }));
+$('flipOnce').addEventListener('click', () => { flipOnce(); flipInfo(); flipDraw(); binDraw(); });
+$('flipAuto').addEventListener('click', () => { FL.auto = !FL.auto; flipInfo(); });
+$('flipClear').addEventListener('click', () => { flipReset(); flipInfo(); flipDraw(); binDraw(); });
+
+/* ================= EINSTEIN SOLID: dots and bars ================= */
+const ES = {N:4, q:8, occ:null};
+function esRandom(){ // a uniformly random microstate: choose which of the q+N-1 symbols are dots
+  const n = ES.q + ES.N - 1, sym = new Array(n).fill(0); // 0 = bar, 1 = dot
+  const idx = Array.from({length:n}, (_,i) => i); for (let i=n-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); [idx[i],idx[j]] = [idx[j],idx[i]]; }
+  for (let k=0;k<ES.q;k++) sym[idx[k]] = 1;
+  ES.sym = sym; ES.occ = []; let cnt = 0; sym.forEach(s => { if (s) cnt++; else { ES.occ.push(cnt); cnt = 0; } }); ES.occ.push(cnt);
+}
+function esDraw(){
+  $('eNOut').textContent = ES.N; $('eQOut').textContent = ES.q;
+  $('eState').textContent = '(' + ES.occ.join(', ') + ')';
+  $('eOm').innerHTML = bigStr(lnC(ES.q + ES.N - 1, ES.q));
+  const c = dotsCtx; if (!c) return;
+  const W=640, H=200; c.clearRect(0,0,W,H); c.fillStyle=C.surface; c.fillRect(0,0,W,H);
+  const n = ES.sym.length, sp = Math.min(34, (W-60)/Math.max(1,n)), x0 = (W - sp*n)/2 + sp/2, y = 80;
+  ES.sym.forEach((s,i) => { const x = x0 + i*sp;
+    if (s){ c.fillStyle=C.ink; c.beginPath(); c.arc(x, y, 8, 0, 7); c.fill(); }
+    else { c.strokeStyle=C.acc; c.lineWidth=3; c.beginPath(); c.moveTo(x, y-20); c.lineTo(x, y+20); c.stroke(); } });
+  // label each oscillator under its run of dots
+  let start = 0, k = 0;
+  for (let i=0;i<=n;i++){
+    if (i === n || !ES.sym[i]){ const a = x0 + (start - 0.5)*sp, b = x0 + (i - 0.5)*sp, mid = (a+b)/2 + (k===0 ? sp*0.25 : 0);
+      c.fillStyle=C.muted; c.font='12px '+SANS; c.textAlign='center'; c.fillText('#' + (k+1), (a+b)/2, y+44);
+      c.fillStyle=C.ink; c.font='600 13px '+SANS; c.fillText(ES.occ[k], (a+b)/2, y+62); k++; start = i+1; }
+  }
+  c.fillStyle=C.muted; c.font='12px '+SANS; c.textAlign='left';
+  c.fillText(ES.q + ' dots and ' + (ES.N-1) + ' bars: ' + (ES.q + ES.N - 1) + ' symbols, of which ' + ES.q + ' are dots', 14, 24);
+  c.fillText('oscillator', 14, y+44); c.fillText('energy units', 14, y+62);
+}
+$('eN').addEventListener('input', e => { ES.N = +e.target.value; esRandom(); esDraw(); });
+$('eQ').addEventListener('input', e => { ES.q = +e.target.value; esRandom(); esDraw(); });
+$('eNew').addEventListener('click', () => { esRandom(); esDraw(); });
+function e3Render(){
+  const q = +$('e3q').value; $('e3qOut').textContent = q;
+  const rows = []; for (let a=q;a>=0;a--) for (let b=q-a;b>=0;b--) rows.push([a, b, q-a-b]);
+  $('e3Table').innerHTML = '<thead><tr><th>Oscillator</th><th>#1</th><th>#2</th><th>#3</th></tr></thead><tbody>' + rows.map((r,i) => '<tr><td style="color:var(--muted)">' + (i+1) + '</td><td>' + r.join('</td><td>') + '</td></tr>').join('') + '</tbody><tfoot><tr><td colspan="4" style="text-align:left;font-weight:600">Ω(3, ' + q + ') = ' + rows.length + '</td></tr></tfoot>';
+}
+$('e3q').addEventListener('input', e3Render);
+
+/* ================= INTERACTING SOLIDS ================= */
+const IS = {NA:3, NB:3, q:6};
+function isCompute(){
+  const {NA, NB, q} = IS, ln = [];
+  for (let a=0;a<=q;a++) ln.push(lnC(a+NA-1, a) + lnC(q-a+NB-1, q-a));
+  const lnAll = lnC(q+NA+NB-1, q);
+  let best = 0; ln.forEach((v,a) => { if (v > ln[best]) best = a; });
+  return {ln, lnAll, best};
+}
+function isRender(){
+  const {NA, NB, q} = IS, r = isCompute();
+  $('iNAOut').textContent = NA; $('iNBOut').textContent = NB; $('iQOut').textContent = q;
+  $('iAll').innerHTML = bigStr(r.lnAll); $('iMac').textContent = (q+1).toLocaleString('en-US');
+  $('iBest').textContent = r.best; $('iBestP').innerHTML = probStr(Math.exp(r.ln[r.best] - r.lnAll));
+  $('iZero').innerHTML = probStr(Math.exp(r.ln[0] - r.lnAll));
+  $('omCap').innerHTML = q <= 12 ? 'Each bar is one macrostate; its height is the number of microstates, Ω<sub>total</sub> = Ω<sub>A</sub>Ω<sub>B</sub>.' : 'Heights are relative to the most likely macrostate. Most of the macrostates have far too few microstates to see.';
+  const c = omCtx; if (!c) return;
+  const W=640, H=320, small = q <= 12;
+  const ymax = small ? Math.exp(r.ln[r.best])*1.12 : 1.12;
+  const yv = a => small ? Math.exp(r.ln[a]) : Math.exp(r.ln[a] - r.ln[r.best]);
+  const step = q <= 12 ? 1 : q <= 60 ? 5 : q <= 150 ? 10 : q <= 300 ? 25 : 50; const xt = []; for (let v=0; v<=q; v+=step) xt.push(v);
+  const yt = small ? (() => { const m = ymax/1.12, st = m > 50 ? (m > 200 ? 50 : 20) : m > 10 ? 5 : 1; const t = []; for (let v=0; v<=m; v+=st) t.push(v); return t; })() : [0, 0.5, 1];
+  const ax = axes(c, W, H, [52,16,16,40], [-0.5, q+0.5], [0, ymax], xt, yt, [['q','i'],['A','isub']], small ? [['Ω','i'],['total','sub']] : [['Ω','i'],['total','sub'],[' (relative)','s']]);
+  const bw = Math.max(1, (W-68)/(q+1)*0.8);
+  for (let a=0;a<=q;a++){ const v = yv(a), y = ax.Y(v); c.fillStyle = a === r.best ? C.acc : C.res; c.fillRect(ax.X(a) - bw/2, y, bw, ax.Y(0)-y);
+    if (small){ c.fillStyle=C.ink; c.font='12px '+SANS; c.textAlign='center'; c.fillText(Math.round(v), ax.X(a), y-6); } }
+}
+const setIS = (NA, NB, q) => { IS.NA = NA; IS.NB = NB; IS.q = q; $('iNA').value = NA; $('iNB').value = NB; $('iQ').value = q; isRender(); };
+$('iNA').addEventListener('input', e => { IS.NA = +e.target.value; isRender(); });
+$('iNB').addEventListener('input', e => { IS.NB = +e.target.value; isRender(); });
+$('iQ').addEventListener('input', e => { IS.q = +e.target.value; isRender(); });
+$('preSmall').addEventListener('click', () => setIS(3,3,6));
+$('preLarge').addEventListener('click', () => setIS(300,200,100));
+
+/* ================= ENERGY-FLOW SIMULATION ================= */
+const FS = {NA:300, NB:200, q:100, occ:null, steps:0, run:!reduceMotion, spd:1, trace:[], visits:null, start:'B'};
+const FS_SPEEDS = [2, 5, 30, 300, 5000];
+function fsInit(){
+  const N = FS.NA + FS.NB; FS.occ = new Int32Array(N);
+  for (let k=0;k<FS.q;k++){ const i = FS.start === 'B' ? FS.NA + Math.floor(rnd()*FS.NB) : Math.floor(rnd()*FS.NA); FS.occ[i]++; }
+  FS.steps = 0; FS.trace = []; FS.visits = new Float64Array(FS.q+1); FS.qA = FS.start === 'B' ? 0 : FS.q; FS.trace.push([0, FS.qA]);
+}
+function fsSteps(n){
+  const N = FS.NA + FS.NB;
+  for (let s=0;s<n;s++){
+    const i = (rnd()*N)|0;
+    if (FS.occ[i] > 0){ const j = (rnd()*N)|0; FS.occ[i]--; FS.occ[j]++; if (i < FS.NA && j >= FS.NA) FS.qA--; else if (i >= FS.NA && j < FS.NA) FS.qA++; }
+    FS.visits[FS.qA]++;
+  }
+  FS.steps += n;
+  FS.trace.push([FS.steps, FS.qA]); if (FS.trace.length > 2000){ FS.trace = FS.trace.filter((_,k) => k % 2 === 0); }
+}
+function solidDraw(){
+  const c = solidCtx; if (!c) return;
+  const W=640, H=190; c.clearRect(0,0,W,H); c.fillStyle=C.surface; c.fillRect(0,0,W,H);
+  const cols = 25, cell = 10.5, gapX = 40;
+  const drawBlock = (off, count, x0, lab, col) => {
+    const rows = Math.ceil(count/cols);
+    c.fillStyle=C.ink; c.font='600 14px '+SANS; c.textAlign='left'; c.fillText(lab, x0, 22);
+    for (let k=0;k<count;k++){ const q = FS.occ[off+k], x = x0 + (k%cols)*cell, y = 32 + Math.floor(k/cols)*cell;
+      c.fillStyle = q === 0 ? C.band : col; c.globalAlpha = q === 0 ? 1 : Math.min(1, 0.35 + 0.3*q); c.fillRect(x, y, cell-1.5, cell-1.5); }
+    c.globalAlpha = 1;
+  };
+  drawBlock(0, FS.NA, 24, 'Solid A, 300 oscillators', C.a);
+  drawBlock(FS.NA, FS.NB, 24 + cols*cell + gapX, 'Solid B, 200 oscillators', C.b);
+}
+function traceDraw(){
+  const c = traceCtx; if (!c) return;
+  const W=640, H=260, L=48, R=150, T=16, B=40, tmax = Math.max(3000, FS.steps*1.05);
+  const ax = axes(c, W, H, [L,T,R,B], [0, tmax], [0, FS.q], [], [0, 20, 40, 60, 80, 100], [['time (steps)','s']], [['q','i'],['A','isub']]);
+  c.strokeStyle=C.res; c.setLineDash([3,4]); c.beginPath(); c.moveTo(ax.X(0), ax.Y(60)); c.lineTo(ax.X(tmax), ax.Y(60)); c.stroke(); c.setLineDash([]);
+  c.strokeStyle=C.a; c.lineWidth=2; c.beginPath(); FS.trace.forEach(([t,v],i) => { const x=ax.X(t), y=ax.Y(v); i?c.lineTo(x,y):c.moveTo(x,y); }); c.stroke();
+  // histogram of time spent at each q_A, and the exact multiplicity, along the right edge
+  const hx0 = W - R + 14, hw = R - 24; let vmax = 0; for (let v=0; v<=FS.q; v++) vmax = Math.max(vmax, FS.visits[v]);
+  c.strokeStyle=C.muted; c.lineWidth=1; c.beginPath(); c.moveTo(hx0, T); c.lineTo(hx0, H-B); c.stroke();
+  if (vmax > 0){ c.fillStyle=C.a; c.globalAlpha=0.45; for (let v=0; v<=FS.q; v++){ const w = FS.visits[v]/vmax*hw; if (w > 0) c.fillRect(hx0, ax.Y(v+0.5), w, Math.max(1, ax.Y(v-0.5)-ax.Y(v+0.5))); } c.globalAlpha=1; }
+  let lmax = -Infinity; const ln = []; for (let v=0; v<=FS.q; v++){ ln.push(lnC(v+FS.NA-1, v) + lnC(FS.q-v+FS.NB-1, FS.q-v)); lmax = Math.max(lmax, ln[v]); }
+  c.strokeStyle=C.acc; c.lineWidth=2; c.beginPath(); for (let v=0; v<=FS.q; v++){ const x = hx0 + Math.exp(ln[v]-lmax)*hw, y = ax.Y(v); v ? c.lineTo(x,y) : c.moveTo(x,y); } c.stroke();
+  c.fillStyle=C.muted; c.font='11px '+SANS; c.textAlign='center'; c.fillText('time spent', hx0 + hw/2, H-B+16);
+  c.textAlign='left'; c.fillText('most likely', ax.X(tmax)-70, ax.Y(60)-6);
+}
+function fsInfo(){
+  $('flSteps').textContent = FS.steps.toLocaleString('en-US'); $('flQA').textContent = FS.qA; $('flQB').textContent = FS.q - FS.qA;
+  $('flSpdOut').textContent = FS_SPEEDS[FS.spd].toLocaleString('en-US') + (FS_SPEEDS[FS.spd] === 1 ? ' step' : ' steps') + ' per frame';
+  $('flPlay').textContent = FS.run ? 'Pause' : 'Play';
+  document.querySelectorAll('[data-start]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.start === FS.start)));
+}
+document.querySelectorAll('[data-start]').forEach(b => b.addEventListener('click', () => { FS.start = b.dataset.start; fsInit(); solidDraw(); traceDraw(); fsInfo(); }));
+$('flSpd').addEventListener('input', e => { FS.spd = +e.target.value; fsInfo(); });
+$('flPlay').addEventListener('click', () => { FS.run = !FS.run; fsInfo(); });
+
+/* ================= LAYOUT + LOOP ================= */
+let flipCtx, binCtx, dotsCtx, omCtx, solidCtx, traceCtx;
+function layout(){
+  flipCtx = fit($('flipCanvas'), 640, 200); binCtx = fit($('binCanvas'), 640, 260);
+  dotsCtx = fit($('dotsCanvas'), 640, 200); omCtx = fit($('omCanvas'), 640, 320);
+  solidCtx = fit($('solidCanvas'), 640, 190); traceCtx = fit($('traceCanvas'), 640, 260);
+  redrawAll();
+}
+function redrawAll(){ flipInfo(); flipDraw(); binDraw(); esDraw(); e3Render(); isRender(); solidDraw(); traceDraw(); fsInfo(); }
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layout, 80); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); redrawAll(); });
+const vis = {flip:true, flow:true};
+const io = new IntersectionObserver(es => es.forEach(e => { vis[e.target.dataset.key] = e.isIntersecting; }));
+[['flipCanvas','flip'],['binCanvas','flip'],['solidCanvas','flow'],['traceCanvas','flow']].forEach(([id,k]) => { $(id).dataset.key = k; io.observe($(id)); });
+let infoT = 0, last = performance.now(), flipT = 0;
+function loop(now){
+  const dt = Math.min(0.1, (now-last)/1000); last = now; infoT += dt; flipT += dt;
+  if (FL.auto && vis.flip && flipCtx && flipT > (FL.N >= 10000 ? 0.05 : 0.03)){ flipT = 0; const reps = FL.N <= 100 ? 8 : FL.N <= 1000 ? 3 : 1; for (let k=0;k<reps;k++) flipOnce(); flipDraw(); binDraw(); }
+  if (FS.run && vis.flow && solidCtx){ fsSteps(FS_SPEEDS[FS.spd]); solidDraw(); traceDraw(); }
+  if (infoT > 0.2){ infoT = 0; if (vis.flip) flipInfo(); if (vis.flow) fsInfo(); }
+  requestAnimationFrame(loop);
+}
+flipReset(); esRandom(); fsInit();
+layout();
+requestAnimationFrame(loop);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(redrawAll);
+})();
+</script>
+</body>
+</html>
