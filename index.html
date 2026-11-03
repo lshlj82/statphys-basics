@@ -252,15 +252,15 @@ button.theme-btn svg{width:20px; height:20px; fill:none; stroke:currentColor; st
       </div>
       <div class="ctl">
         <label for="iNA"><span class="lt">\(N_A\)</span> <output id="iNAOut"></output></label>
-        <input type="range" id="iNA" min="1" max="600" step="1" value="3">
+        <input type="range" id="iNA" aria-label="N_A, number of oscillators in solid A" min="1" max="600" step="1" value="3">
       </div>
       <div class="ctl">
         <label for="iNB"><span class="lt">\(N_B\)</span> <output id="iNBOut"></output></label>
-        <input type="range" id="iNB" min="1" max="600" step="1" value="3">
+        <input type="range" id="iNB" aria-label="N_B, number of oscillators in solid B" min="1" max="600" step="1" value="3">
       </div>
       <div class="ctl">
         <label for="iQ"><span class="lt">\(q_{\text{total}}\)</span> <output id="iQOut"></output></label>
-        <input type="range" id="iQ" min="1" max="400" step="1" value="6">
+        <input type="range" id="iQ" aria-label="q total, units of energy shared by A and B" min="1" max="400" step="1" value="6">
       </div>
       <dl class="stats">
         <dt>All microstates</dt><dd id="iAll">–</dd>
@@ -518,13 +518,15 @@ function isRender(){
   $('iAll').innerHTML = bigStr(r.lnAll); $('iMac').textContent = (q+1).toLocaleString('en-US');
   $('iBest').textContent = r.best; $('iBestP').innerHTML = probStr(Math.exp(r.ln[r.best] - r.lnAll));
   $('iZero').innerHTML = probStr(Math.exp(r.ln[0] - r.lnAll));
-  $('omCap').innerHTML = q <= 12 ? 'Each bar is one macrostate; its height is the number of microstates, Ω<sub>total</sub> = Ω<sub>A</sub>Ω<sub>B</sub>.' : 'Heights are relative to the most likely macrostate. Most of the macrostates have far too few microstates to see.';
+  // absolute heights only while the largest multiplicity is small enough to label; otherwise normalize
+  const small = q <= 12 && r.ln[r.best] < Math.log(1e5);
+  $('omCap').innerHTML = small ? 'Each bar is one macrostate; its height is the number of microstates, Ω<sub>total</sub> = Ω<sub>A</sub>Ω<sub>B</sub>.' : 'Heights are relative to the most likely macrostate. Most of the macrostates have far too few microstates to see.';
   const c = omCtx; if (!c) return;
-  const W=640, H=320, small = q <= 12;
+  const W=640, H=320;
   const ymax = small ? Math.exp(r.ln[r.best])*1.12 : 1.12;
   const yv = a => small ? Math.exp(r.ln[a]) : Math.exp(r.ln[a] - r.ln[r.best]);
   const step = q <= 12 ? 1 : q <= 60 ? 5 : q <= 150 ? 10 : q <= 300 ? 25 : 50; const xt = []; for (let v=0; v<=q; v+=step) xt.push(v);
-  const yt = small ? (() => { const m = ymax/1.12, st = m > 50 ? (m > 200 ? 50 : 20) : m > 10 ? 5 : 1; const t = []; for (let v=0; v<=m; v+=st) t.push(v); return t; })() : [0, 0.5, 1];
+  const yt = small ? (() => { const m = ymax/1.12, raw = m/5, p = Math.pow(10, Math.floor(Math.log10(raw))), st = Math.max(1, [1,2,5,10].find(k => k*p >= raw)*p); const t = []; for (let v=0; v<=m; v+=st) t.push(v); return t; })() : [0, 0.5, 1];
   const ax = axes(c, W, H, [52,16,16,40], [-0.5, q+0.5], [0, ymax], xt, yt, [['q','i'],['A','isub']], small ? [['Ω','i'],['total','sub']] : [['Ω','i'],['total','sub'],[' (relative)','s']]);
   const bw = Math.max(1, (W-68)/(q+1)*0.8);
   for (let a=0;a<=q;a++){ const v = yv(a), y = ax.Y(v); c.fillStyle = a === r.best ? C.acc : C.res; c.fillRect(ax.X(a) - bw/2, y, bw, ax.Y(0)-y);
@@ -606,8 +608,9 @@ function redrawAll(){ flipInfo(); flipDraw(); binDraw(); esDraw(); e3Render(); i
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layout, 80); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); redrawAll(); });
 new MutationObserver(() => { readColors(); redrawAll(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-const vis = {flip:true, flow:true};
-const io = new IntersectionObserver(es => es.forEach(e => { vis[e.target.dataset.key] = e.isIntersecting; }));
+const vis = {flip:true, flow:true}, visOn = {flip:new Set(), flow:new Set()};
+// an experiment keeps running while any one of its canvases is on screen
+const io = new IntersectionObserver(es => es.forEach(e => { const k = e.target.dataset.key; visOn[k][e.isIntersecting ? 'add' : 'delete'](e.target); vis[k] = visOn[k].size > 0; }));
 [['flipCanvas','flip'],['binCanvas','flip'],['solidCanvas','flow'],['traceCanvas','flow']].forEach(([id,k]) => { $(id).dataset.key = k; io.observe($(id)); });
 let infoT = 0, last = performance.now(), flipT = 0;
 function loop(now){
